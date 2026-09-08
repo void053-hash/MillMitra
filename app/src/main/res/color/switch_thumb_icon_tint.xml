@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Checked / ON: Emerald green checkmark inside white thumb -->
+    <item android:state_checked="true" android:color="#10B981" />
+    <!-- Unchecked / OFF: Transparent / no icon -->
+    <item android:color="@android:color/transparent" />
+</selector>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.millmitra.app.ui.view.DraggableBubbleLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/bubbleRoot"
+    android:layout_width="wrap_content"
+    android:layout_height="56dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/bg_bubble_dock"
+    android:paddingStart="6dp"
+    android:paddingEnd="8dp"
+    android:elevation="14dp">
+
+    <!-- Draggable Logo / MillMitra Anchor -->
+    <ImageView
+        android:id="@+id/ivDragHandle"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:padding="9dp"
+        android:src="@drawable/ic_factory"
+        android:tint="#F8FAFC"
+        android:contentDescription="Drag MillMitra" />
+
+    <!-- Divider -->
+    <View
+        android:layout_width="1dp"
+        android:layout_height="24dp"
+        android:background="#334155"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="4dp" />
+
+    <!-- Action 1: Translate (Decode Clipboard: English -> Hinglish) -->
+    <ImageButton
+        android:id="@+id/btnActionTranslate"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:background="@android:color/transparent"
+        android:src="@drawable/ic_translate"
+        android:tint="#F8FAFC"
+        android:padding="8dp"
+        android:contentDescription="Decode Clipboard" />
+
+    <!-- Action 2: Dictate (Mic: Voice -> English Shift Report) -->
+    <ImageButton
+        android:id="@+id/btnActionMic"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:background="@android:color/transparent"
+        android:src="@drawable/ic_mic"
+        android:tint="#F8FAFC"
+        android:padding="8dp"
+        android:contentDescription="Dictate Shift Report" />
+
+    <!-- Dismiss Button (Revealed on Tap and Hold) -->
+    <ImageButton
+        android:id="@+id/btnDismissOverlay"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:background="@drawable/bg_dismiss_pill"
+        android:src="@drawable/ic_close"
+        android:tint="#FFFFFF"
+        android:padding="9dp"
+        android:layout_marginStart="4dp"
+        android:visibility="gone"
+        android:contentDescription="Close MillMitra Floating Dock" />
+
+</com.millmitra.app.ui.view.DraggableBubbleLayout>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Checked / ON: Transparent border -->
+    <item android:state_checked="true" android:color="@android:color/transparent" />
+    <!-- Unchecked / OFF: Soft light border -->
+    <item android:color="#CBD5E1" />
+</selector>

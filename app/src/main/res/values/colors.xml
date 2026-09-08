@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- MillMitra Precision Industrial Palette -->
+    <color name="primary">#0F172A</color>
+    <color name="primary_dark">#020617</color>
+    <color name="primary_brand">#2563EB</color>
+    <color name="primary_brand_dark">#1D4ED8</color>
+    <color name="primary_brand_light">#DBEAFE</color>
+
+    <color name="mill_emerald">#059669</color>
+    <color name="mill_green">#059669</color>
+    <color name="mill_emerald_light">#D1FAE5</color>
+    <color name="mill_emerald_dark">#065F46</color>
+
+    <color name="accent_amber">#D97706</color>
+    <color name="accent_amber_light">#FEF3C7</color>
+
+    <color name="paper_bg">#F1F5F9</color>
+    <color name="card_surface">#FFFFFF</color>
+    <color name="card_stroke">#E2E8F0</color>
+
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#475569</color>
+    <color name="text_muted">#94A3B8</color>
+
+    <color name="divider_color">#E2E8F0</color>
+    <color name="error_red">#DC2626</color>
+    <color name="error_red_light">#FEE2E2</color>
+
+    <color name="bubble_tint">#0F172A</color>
+    <color name="bubble_border">#38BDF8</color>
+</resources>

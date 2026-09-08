@@ -1,0 +1,25 @@
+*.iml
+.gradle
+.kotlin/
+/local.properties
+/.idea/
+.idea/
+.DS_Store
+/build
+app/build/
+*/build/
+captures/
+.externalNativeBuild
+.cxx
+*.keystore
+!debug.keystore
+
+# Temporary tools & screenshots
+platform-tools/
+*.png
+!app/src/main/res/**/*.png
+
+# APK build outputs
+*.apk
+!MillMitra-latest.apk
+*.aab

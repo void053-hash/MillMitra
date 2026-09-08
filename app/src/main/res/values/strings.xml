@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">MillMitra</string>
+    <string name="app_tagline">Paper Mill Operations Assistant</string>
+    <string name="start_overlay">Start Floating Overlay</string>
+    <string name="stop_overlay">Stop Overlay</string>
+    <string name="permission_overlay_title">Overlay Permission Required</string>
+    <string name="permission_overlay_desc">MillMitra needs permission to draw over other apps so the Production Manager can translate &amp; dictate shift notes anywhere.</string>
+    <string name="permission_mic_title">Microphone Permission Required</string>
+    <string name="permission_mic_desc">Needed to capture Hinglish voice reports on the mill floor.</string>
+    <string name="api_key_hint">Enter Gemini API Key</string>
+    <string name="api_key_saved">Gemini API Key Saved</string>
+    <string name="save">Save</string>
+    <string name="history_title">7-Day Shift &amp; Translation Logs</string>
+    <string name="no_history">No recent records. Tap the floating widget to translate clipboard text or dictate a shift report.</string>
+    <string name="copy_to_clipboard">Copy (कॉपी)</string>
+    <string name="copied">Copied to clipboard</string>
+    <string name="processing">Processing with Gemini...</string>
+    <string name="listening">Listening for Hinglish speech...</string>
+    <string name="notification_channel_name">MillMitra Floating Service</string>
+    <string name="notification_title">MillMitra Active</string>
+    <string name="notification_text">Floating paper mill assistant is running.</string>
+</resources>

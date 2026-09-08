@@ -1,0 +1,36 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Background Rounded Soft Shield -->
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M8,4h32a4,4 0 0,1 4,4v32a4,4 0 0,1 -4,4H8a4,4 0 0,1 -4,-4V8a4,4 0 0,1 4,-4z" />
+
+    <!-- Industrial Machine Base Roll -->
+    <path
+        android:fillColor="#334155"
+        android:pathData="M10,38h28v3H10z" />
+
+    <!-- Continuous Paper Mill 'M' Ribbon (Left Pillar & Roll) -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M12,16a4,4 0 0,1 8,0v18h-4V18a1.5,1.5 0 0,0 -3,0v16h-4V16a4,4 0 0,1 3,-3.87z" />
+
+    <!-- Continuous Paper Mill 'M' Ribbon (Center Arch & Fold) -->
+    <path
+        android:fillColor="#0284C7"
+        android:pathData="M20,20l4,6l4,-6v14h-3.5v-8.5l-3,4.5a1,1 0 0,1 -1.6,0l-3,-4.5V34H17V20h3z" />
+
+    <!-- Continuous Paper Mill 'M' Ribbon (Right Pillar & Calender Roll) -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M28,16a4,4 0 0,1 8,0v18h-4V18a1.5,1.5 0 0,0 -3,0v16h-4V16a4,4 0 0,1 3,-3.87z" />
+
+    <!-- Paper Web Glow / Crown Point -->
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M24,11a2.5,2.5 0 1,1 0.001,-0.001z" />
+</vector>
