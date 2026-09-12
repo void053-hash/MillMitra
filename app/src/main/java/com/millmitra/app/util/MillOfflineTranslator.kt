@@ -28,39 +28,39 @@ object MillOfflineTranslator {
         // 1. Common Operational Templates
         val result = when {
             lower.contains("paper break") || lower.contains("break on machine") -> {
-                "Paper machine पर paper break हो रहा है। कृपया wire और couch roll section चेक करें।"
+                "पेपर मशीन पर पेपर ब्रेक हो रहा है। कृपया वायर और काउच रोल सेक्शन चेक करें।"
             }
             lower.contains("wire") && (lower.contains("torn") || lower.contains("damage") || lower.contains("cut")) -> {
-                "Press section में wire damage / phat गई है। तत्काल production रोककर चेक करें।"
+                "प्रेस सेक्शन में वायर डैमेज / फट गई है। तत्काल प्रोडक्शन रोककर चेक करें।"
             }
             lower.contains("felt") && (lower.contains("dirty") || lower.contains("blind") || lower.contains("choke")) -> {
-                "Felt choke / dirty हो गई है। high pressure shower और chemical wash चालू करें।"
+                "फेल्ट चोक / गंदी हो गई है। हाई प्रेशर शॉवर और केमिकल वॉश चालू करें।"
             }
             lower.contains("steam") && (lower.contains("low") || lower.contains("drop") || lower.contains("pressure")) -> {
-                "Boiler से steam pressure drop हो गया है। drying cylinders का temperature चेक करें।"
+                "बॉयलर से स्टीम प्रेशर ड्रॉप हो गया है। ड्राइंग सिलेंडर्स का टेम्परेचर चेक करें।"
             }
             lower.contains("dosing") || (lower.contains("chemical") && lower.contains("pump")) -> {
-                "Chemical dosing pump में समस्या है। flow rate और stroke चेक करें।"
+                "केमिकल डोज़िंग पंप में समस्या है। फ्लो रेट और स्ट्रोक चेक करें।"
             }
             lower.contains("bearing") && (lower.contains("hot") || lower.contains("temp") || lower.contains("noise")) -> {
-                "Bearing over-heat हो रही है और noise आ रही है। lubrication और vibration तुरंत चेक करें।"
+                "बेयरिंग ओवर-हीट हो रही है और वाइब्रेशन आ रही है। लुब्रिकेशन तुरंत चेक करें।"
             }
             lower.contains("pulper") && (lower.contains("jam") || lower.contains("overload")) -> {
-                "Pulper overload / jam हो गया है। feeding तुरंत रोकें।"
+                "पल्पर ओवरलोड / जाम हो गया है। फीडिंग तुरंत रोकें।"
             }
             lower.contains("couch roll") -> {
-                "Couch roll section में समस्या आई है। vacuum और alignment चेक करें।"
+                "काउच रोल सेक्शन में समस्या आई है। वैक्यूम और अलाइनमेंट चेक करें।"
             }
             lower.contains("downtime") -> {
-                "Machine पर downtime चल रहा है। maintenance कार्य जारी है।"
+                "मशीन पर डाउनटाइम चल रहा है। मेंटेनेंस कार्य जारी है।"
             }
             else -> {
-                // Heuristic translation keeping technical terms in English
+                // Heuristic translation transliterating technical terms into Devanagari
                 translateGenericEnglishToHindi(englishText)
             }
         }
 
-        return "$result\n\n[OFFLINE MODE: Mill Dictionary]"
+        return "$result\n\n[ऑफलाइन मोड: मिल डिक्शनरी]"
     }
 
     /**
@@ -108,8 +108,45 @@ object MillOfflineTranslator {
 
     private fun translateGenericEnglishToHindi(text: String): String {
         var processed = text
-        // Replace common helper words while preserving mill keywords
+        // Replace mill terms and common helper words with Devanagari script
         val dictionary = mapOf(
+            // Mill terms phonetic transliteration
+            "machine" to "मशीन",
+            "paper" to "पेपर",
+            "wire" to "वायर",
+            "felt" to "फेल्ट",
+            "press" to "प्रेस",
+            "couch roll" to "काउच रोल",
+            "couch" to "काउच",
+            "roll" to "रोल",
+            "boiler" to "बॉयलर",
+            "steam" to "स्टीम",
+            "pressure" to "प्रेशर",
+            "downtime" to "डाउनटाइम",
+            "chemical" to "केमिकल",
+            "dosing" to "डोज़िंग",
+            "pump" to "पंप",
+            "motor" to "मोटर",
+            "bearing" to "बेयरिंग",
+            "valve" to "वॉल्व",
+            "pulper" to "पल्पर",
+            "refiner" to "रिफाइनर",
+            "calender" to "कैलेंडर",
+            "speed" to "स्पीड",
+            "production" to "प्रोडक्शन",
+            "shift" to "शिफ्ट",
+            "operator" to "ऑपरेटर",
+            "break" to "ब्रेक",
+            "vacuum" to "वैक्यूम",
+            "temperature" to "टेम्परेचर",
+            "temp" to "टेम्परेचर",
+            "vibration" to "वाइब्रेशन",
+            "noise" to "नॉइज़",
+            "gsm" to "जीएसएम",
+            "caliper" to "कैलिपर",
+            "deckle" to "डेकल",
+            "rewinder" to "रिवाइंडर",
+            // Helper operational words
             "problem" to "समस्या",
             "issue" to "दिक्कत",
             "check" to "चेक करें",
@@ -132,6 +169,6 @@ object MillOfflineTranslator {
             processed = processed.replace(regex, hi)
         }
 
-        return "Mill Message: $processed"
+        return processed
     }
 }
