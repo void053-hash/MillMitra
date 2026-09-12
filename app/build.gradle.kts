@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -18,7 +20,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Load Gemini API key from local.properties or environment, keeping secrets out of git
-        val localProps = java.util.Properties().apply {
+        val localProps = Properties().apply {
             val file = rootProject.file("local.properties")
             if (file.exists()) {
                 load(file.inputStream())

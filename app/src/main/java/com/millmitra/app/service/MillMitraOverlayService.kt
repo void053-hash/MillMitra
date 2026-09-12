@@ -34,6 +34,7 @@ import androidx.core.app.NotificationCompat
 import com.millmitra.app.MillMitraApp
 import com.millmitra.app.R
 import com.millmitra.app.ui.MainActivity
+import com.millmitra.app.ui.VoiceInputActivity
 import com.millmitra.app.util.TextSanitizer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -66,6 +67,7 @@ class MillMitraOverlayService : Service() {
     private var progressBar: ProgressBar? = null
     private var btnCopyClipboard: Button? = null
     private var btnShareWhatsApp: Button? = null
+    private var btnLaunchSystemVoice: Button? = null
     private var layoutVocabulary: View? = null
     private var tvVocabContent: TextView? = null
     private var layoutDecodeInput: View? = null
@@ -125,9 +127,17 @@ class MillMitraOverlayService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP_SERVICE) {
-            stopSelf()
-            return START_NOT_STICKY
+        when (intent?.action) {
+            ACTION_STOP_SERVICE -> {
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            ACTION_PROCESS_VOICE_TEXT -> {
+                val spokenText = intent.getStringExtra(EXTRA_VOICE_TEXT)
+                if (!spokenText.isNullOrBlank()) {
+                    processRecognizedVoiceText(spokenText)
+                }
+            }
         }
         return START_STICKY
     }
@@ -270,6 +280,10 @@ class MillMitraOverlayService : Service() {
             progressBar = cardView?.findViewById(R.id.progressBar)
             btnCopyClipboard = cardView?.findViewById(R.id.btnCopyClipboard)
             btnShareWhatsApp = cardView?.findViewById(R.id.btnShareWhatsApp)
+            btnLaunchSystemVoice = cardView?.findViewById(R.id.btnLaunchSystemVoice)
+            btnLaunchSystemVoice?.setOnClickListener {
+                launchSystemVoiceInput()
+            }
             layoutVocabulary = cardView?.findViewById(R.id.layoutVocabulary)
             tvVocabContent = cardView?.findViewById(R.id.tvVocabContent)
             layoutDecodeInput = cardView?.findViewById(R.id.layoutDecodeInput)
@@ -492,17 +506,23 @@ class MillMitraOverlayService : Service() {
         showCard(
             modeTitle = "Dictate: Hinglish ➔ Shift Report",
             inputPreview = getString(R.string.listening),
-            initialOutput = "Speak now in Hinglish (e.g. 'Press wire phat gaya tha, 30 min downtime hua...')...",
+            initialOutput = "Speak now in Hinglish (e.g. 'Press wire phat gaya tha, 30 min downtime hua...')...\n\nOr tap 'Google Voice' below to speak.",
             showProgress = true
         )
+        btnCopyClipboard?.visibility = View.GONE
+        btnShareWhatsApp?.visibility = View.GONE
+        btnLaunchSystemVoice?.visibility = View.VISIBLE
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "hi-IN")
-            putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "hi-IN")
+            putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("en-IN", "hi-IN", "en-US"))
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 4000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
         }
 
         try {
@@ -511,7 +531,8 @@ class MillMitraOverlayService : Service() {
         } catch (e: Exception) {
             e.printStackTrace()
             progressBar?.visibility = View.GONE
-            tvOutputText?.text = "Could not start mic: ${e.message}"
+            tvOutputText?.text = "Could not start mic: ${e.message}. Tap 'Google Voice' below."
+            btnLaunchSystemVoice?.visibility = View.VISIBLE
         }
     }
 
@@ -545,13 +566,16 @@ class MillMitraOverlayService : Service() {
                         isListening = false
                         progressBar?.visibility = View.GONE
                         val errorMsg = when (error) {
-                            SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
-                            SpeechRecognizer.ERROR_NO_MATCH -> "No speech detected"
-                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Speech timeout"
-                            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Audio permission missing"
-                            else -> "Speech recognition error code: $error"
+                            SpeechRecognizer.ERROR_AUDIO -> "Audio recording issue. Tap 'Google Voice' below."
+                            SpeechRecognizer.ERROR_NO_MATCH -> "No speech heard. Speak closer to phone or tap 'Google Voice' below."
+                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Speech timeout. Tap 'Google Voice' below to speak."
+                            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission missing in phone settings."
+                            else -> "Voice recognition notice ($error). Tap 'Google Voice' below."
                         }
                         tvOutputText?.text = errorMsg
+                        btnLaunchSystemVoice?.visibility = View.VISIBLE
+                        btnCopyClipboard?.visibility = View.GONE
+                        btnShareWhatsApp?.visibility = View.GONE
                     }
 
                     override fun onResults(results: Bundle?) {
@@ -560,35 +584,11 @@ class MillMitraOverlayService : Service() {
                         val spokenText = matches?.firstOrNull()?.trim()
 
                         if (!spokenText.isNullOrBlank()) {
-                            tvInputPreview?.text = "Voice note: \"$spokenText\""
-                            tvOutputText?.text = "Generating clean, simple English shift report..."
-                            progressBar?.visibility = View.VISIBLE
-
-                            serviceScope.launch {
-                                val apiKey = app.getApiKey()
-                                val reportResult = repository.convertSpeechToReport(spokenText, apiKey)
-                                progressBar?.visibility = View.GONE
-                                reportResult.onSuccess { report ->
-                                    val parsed = TextSanitizer.splitReportAndVocab(report)
-                                    tvOutputText?.text = parsed.reportText
-                                    btnCopyClipboard?.visibility = View.VISIBLE
-                                    btnShareWhatsApp?.visibility = View.VISIBLE
-                                    if (!parsed.vocabText.isNullOrBlank()) {
-                                        tvVocabContent?.text = parsed.vocabText
-                                        layoutVocabulary?.visibility = View.VISIBLE
-                                    } else {
-                                        layoutVocabulary?.visibility = View.GONE
-                                    }
-                                }.onFailure { error ->
-                                    btnCopyClipboard?.visibility = View.GONE
-                                    btnShareWhatsApp?.visibility = View.GONE
-                                    layoutVocabulary?.visibility = View.GONE
-                                    tvOutputText?.text = "Error: ${error.localizedMessage ?: "Failed to generate report."}"
-                                }
-                            }
+                            processRecognizedVoiceText(spokenText)
                         } else {
                             progressBar?.visibility = View.GONE
-                            tvOutputText?.text = "Could not detect clear words. Please tap the mic and try again."
+                            tvOutputText?.text = "Could not detect clear words. Please tap 'Google Voice' below or try speaking closer."
+                            btnLaunchSystemVoice?.visibility = View.VISIBLE
                         }
                     }
 
@@ -608,11 +608,98 @@ class MillMitraOverlayService : Service() {
             android.util.Log.e("MillMitra", "Failed to initialize SpeechRecognizer", e)
             showCard(
                 modeTitle = "Voice Notice",
-                inputPreview = "Voice recognition unavailable",
-                initialOutput = "Speech recognition could not be initialized from the background service on this device (${e.localizedMessage}). You can still use the Translate/Decode tool with your clipboard!",
+                inputPreview = "Voice recognition notice",
+                initialOutput = "Direct background voice recognition is restricted on this phone (${e.localizedMessage}). Tap 'Google Voice' below to dictate your shift notes!",
                 showProgress = false
             )
+            btnLaunchSystemVoice?.visibility = View.VISIBLE
             false
+        }
+    }
+
+    /**
+     * Common processing pipeline for voice text received either from internal SpeechRecognizer
+     * or from the system Google Voice Dialog (VoiceInputActivity).
+     */
+    private fun processRecognizedVoiceText(spokenText: String) {
+        (bubbleView as? com.millmitra.app.ui.view.DraggableBubbleLayout)?.cancelDim()
+        tvModeBadge?.text = "Shift Report Generated"
+        tvInputPreview?.visibility = View.VISIBLE
+        tvInputPreview?.text = "Voice note: \"$spokenText\""
+        tvOutputText?.text = "Generating clean, simple English shift report..."
+        progressBar?.visibility = View.VISIBLE
+        btnCopyClipboard?.visibility = View.GONE
+        btnShareWhatsApp?.visibility = View.GONE
+        btnLaunchSystemVoice?.visibility = View.GONE
+        layoutVocabulary?.visibility = View.GONE
+        layoutDecodeInput?.visibility = View.GONE
+        showCardIfNotShowing()
+
+        serviceScope.launch {
+            val apiKey = app.getApiKey()
+            val reportResult = repository.convertSpeechToReport(spokenText, apiKey)
+            progressBar?.visibility = View.GONE
+            reportResult.onSuccess { report ->
+                val parsed = TextSanitizer.splitReportAndVocab(report)
+                tvOutputText?.text = parsed.reportText
+                btnCopyClipboard?.text = getString(R.string.copy_to_clipboard)
+                btnCopyClipboard?.visibility = View.VISIBLE
+                btnShareWhatsApp?.visibility = View.VISIBLE
+                if (!parsed.vocabText.isNullOrBlank()) {
+                    tvVocabContent?.text = parsed.vocabText
+                    layoutVocabulary?.visibility = View.VISIBLE
+                } else {
+                    layoutVocabulary?.visibility = View.GONE
+                }
+            }.onFailure { error ->
+                btnCopyClipboard?.visibility = View.GONE
+                btnShareWhatsApp?.visibility = View.GONE
+                layoutVocabulary?.visibility = View.GONE
+                tvOutputText?.text = "Error: ${error.localizedMessage ?: "Failed to generate report."}"
+                btnLaunchSystemVoice?.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    /**
+     * Launches the transparent VoiceInputActivity which invokes the official Google Voice Dialog.
+     * Works on all phones and Android versions without background microphone restrictions.
+     */
+    private fun launchSystemVoiceInput() {
+        if (isListening) {
+            try {
+                speechRecognizer?.stopListening()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            isListening = false
+        }
+        val intent = Intent(this, VoiceInputActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        startActivity(intent)
+    }
+
+    private fun showCardIfNotShowing() {
+        cardView?.let { view ->
+            view.visibility = View.VISIBLE
+            if (!isCardShowing || view.parent == null) {
+                try {
+                    if (view.parent != null) {
+                        windowManager.removeView(view)
+                    }
+                    windowManager.addView(view, cardParams)
+                    isCardShowing = true
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            } else {
+                try {
+                    windowManager.updateViewLayout(view, cardParams)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
         }
     }
 
@@ -636,6 +723,7 @@ class MillMitraOverlayService : Service() {
             tvInputPreview?.visibility = View.GONE
             btnCopyClipboard?.visibility = View.GONE
             btnShareWhatsApp?.visibility = View.GONE
+            btnLaunchSystemVoice?.visibility = View.GONE
             cardParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
             cardParams.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
@@ -645,6 +733,7 @@ class MillMitraOverlayService : Service() {
             btnCopyClipboard?.text = getString(R.string.copy_to_clipboard)
             btnCopyClipboard?.visibility = View.VISIBLE
             btnShareWhatsApp?.visibility = View.VISIBLE
+            btnLaunchSystemVoice?.visibility = View.GONE
             cardParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
             cardParams.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED
@@ -750,16 +839,28 @@ class MillMitraOverlayService : Service() {
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                )
             } else {
                 startForeground(NOTIFICATION_ID, notification)
             }
         } catch (e: Exception) {
-            android.util.Log.e("MillMitra", "startForeground with type failed, falling back", e)
+            android.util.Log.e("MillMitra", "startForeground with microphone type failed, falling back", e)
             try {
-                startForeground(NOTIFICATION_ID, notification)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+                } else {
+                    startForeground(NOTIFICATION_ID, notification)
+                }
             } catch (e2: Exception) {
-                android.util.Log.e("MillMitra", "startForeground fallback failed", e2)
+                try {
+                    startForeground(NOTIFICATION_ID, notification)
+                } catch (e3: Exception) {
+                    android.util.Log.e("MillMitra", "startForeground fallback failed", e3)
+                }
             }
         }
     }
@@ -818,6 +919,8 @@ class MillMitraOverlayService : Service() {
         const val CHANNEL_ID = "millmitra_overlay_channel"
         const val NOTIFICATION_ID = 2026
         const val ACTION_STOP_SERVICE = "com.millmitra.app.ACTION_STOP_SERVICE"
+        const val ACTION_PROCESS_VOICE_TEXT = "com.millmitra.app.ACTION_PROCESS_VOICE_TEXT"
+        const val EXTRA_VOICE_TEXT = "extra_voice_text"
 
         @Volatile
         var isRunning = false

@@ -7,4 +7,14 @@
         <item name="android:navigationBarColor">@color/card_surface</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
     </style>
+
+    <!-- Transparent Activity Theme for Seamless Google Voice Dialog -->
+    <style name="Theme.MillMitra.Transparent" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
 </resources>
