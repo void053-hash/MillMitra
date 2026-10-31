@@ -1,4 +1,4 @@
-﻿package com.millmitra.app.ui
+package com.millmitra.app.ui
 
 import android.app.Activity
 import android.content.Intent
@@ -34,7 +34,7 @@ class VoiceInputActivity : AppCompatActivity() {
                 Toast.makeText(this, "No words heard. Please try speaking closer to the microphone.", Toast.LENGTH_SHORT).show()
             }
         }
-        finish()
+        finishActivitySmoothly()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,13 +49,32 @@ class VoiceInputActivity : AppCompatActivity() {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "hi-IN")
             putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("en-IN", "hi-IN", "en-US"))
             putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak mill notes in Hinglish or Hindi...")
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+
+            // Extended dictation settings so Google Speech does not cut off after a few words:
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 15000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
+            putExtra("android.speech.extras.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 15000L)
+            putExtra("android.speech.extras.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 5000L)
+            putExtra("android.speech.extras.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 5000L)
+            putExtra("android.speech.extra.DICTATION_MODE", true)
         }
         try {
             speechLauncher.launch(intent)
         } catch (e: Exception) {
-            Toast.makeText(this, "Google Voice is not enabled or available: ", Toast.LENGTH_LONG).show()
-            finish()
+            Toast.makeText(this, "Google Voice is not enabled or available on this device", Toast.LENGTH_LONG).show()
+            finishActivitySmoothly()
+        }
+    }
+
+    private fun finishActivitySmoothly() {
+        finish()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, 0, 0)
+        } else {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
         }
     }
 }

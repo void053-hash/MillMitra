@@ -57,7 +57,13 @@
         <activity
             android:name=".ui.VoiceInputActivity"
             android:exported="false"
-            android:theme="@style/Theme.MillMitra.Transparent" />
+            android:theme="@style/Theme.MillMitra.Transparent"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleInstance"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:windowSoftInputMode="stateHidden" />
 
     </application>
 

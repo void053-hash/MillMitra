@@ -459,24 +459,9 @@ class MillMitraOverlayService : Service() {
     }
 
     /**
-     * Action 2: Triggers native SpeechRecognizer to capture Hinglish notes and convert to Shift Report.
+     * Action 2: Triggers Google Voice Dialog to capture Hinglish notes and convert to Shift Report.
      */
     private fun handleDictateAction() {
-        if (isListening) {
-            try {
-                speechRecognizer?.stopListening()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            isListening = false
-            return
-        }
-
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            Toast.makeText(this, "Speech recognition is not available on this device", Toast.LENGTH_SHORT).show()
-            return
-        }
-
         val apiKey = app.getApiKey()
         if (apiKey.isBlank() || apiKey == "YOUR_GEMINI_API_KEY_HERE") {
             showCard(
@@ -499,41 +484,8 @@ class MillMitraOverlayService : Service() {
             return
         }
 
-        if (!ensureSpeechRecognizer()) {
-            return
-        }
-
-        showCard(
-            modeTitle = "Dictate: Hinglish ➔ Shift Report",
-            inputPreview = getString(R.string.listening),
-            initialOutput = "Speak now in Hinglish (e.g. 'Press wire phat gaya tha, 30 min downtime hua...')...\n\nOr tap 'Google Voice' below to speak.",
-            showProgress = true
-        )
-        btnCopyClipboard?.visibility = View.GONE
-        btnShareWhatsApp?.visibility = View.GONE
-        btnLaunchSystemVoice?.visibility = View.VISIBLE
-
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "hi-IN")
-            putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("en-IN", "hi-IN", "en-US"))
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 4000L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
-        }
-
-        try {
-            speechRecognizer?.startListening(intent)
-            isListening = true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            progressBar?.visibility = View.GONE
-            tvOutputText?.text = "Could not start mic: ${e.message}. Tap 'Google Voice' below."
-            btnLaunchSystemVoice?.visibility = View.VISIBLE
-        }
+        // Direct launch of isolated Google Voice dialog for 100% reliable dictation without opening MainActivity
+        launchSystemVoiceInput()
     }
 
     /**
@@ -645,6 +597,8 @@ class MillMitraOverlayService : Service() {
                 btnCopyClipboard?.text = getString(R.string.copy_to_clipboard)
                 btnCopyClipboard?.visibility = View.VISIBLE
                 btnShareWhatsApp?.visibility = View.VISIBLE
+                btnLaunchSystemVoice?.text = "🎙️ Speak Again (फिर से बोलें)"
+                btnLaunchSystemVoice?.visibility = View.VISIBLE
                 if (!parsed.vocabText.isNullOrBlank()) {
                     tvVocabContent?.text = parsed.vocabText
                     layoutVocabulary?.visibility = View.VISIBLE
@@ -656,6 +610,7 @@ class MillMitraOverlayService : Service() {
                 btnShareWhatsApp?.visibility = View.GONE
                 layoutVocabulary?.visibility = View.GONE
                 tvOutputText?.text = "Error: ${error.localizedMessage ?: "Failed to generate report."}"
+                btnLaunchSystemVoice?.text = "🎙️ Try Speaking Again"
                 btnLaunchSystemVoice?.visibility = View.VISIBLE
             }
         }
@@ -663,7 +618,7 @@ class MillMitraOverlayService : Service() {
 
     /**
      * Launches the transparent VoiceInputActivity which invokes the official Google Voice Dialog.
-     * Works on all phones and Android versions without background microphone restrictions.
+     * Runs in an isolated task so MainActivity is NEVER brought to the foreground.
      */
     private fun launchSystemVoiceInput() {
         if (isListening) {
@@ -675,9 +630,17 @@ class MillMitraOverlayService : Service() {
             isListening = false
         }
         val intent = Intent(this, VoiceInputActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_MULTIPLE_TASK or
+                    Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or
+                    Intent.FLAG_ACTIVITY_NO_ANIMATION
         }
-        startActivity(intent)
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            android.util.Log.e("MillMitra", "Failed to launch VoiceInputActivity", e)
+            Toast.makeText(this, "Could not open voice input: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun showCardIfNotShowing() {
@@ -730,10 +693,14 @@ class MillMitraOverlayService : Service() {
         } else {
             layoutDecodeInput?.visibility = View.GONE
             tvInputPreview?.visibility = View.VISIBLE
+            val hasResult = modeTitle == "Shift Report Generated" || modeTitle.contains("Decode", ignoreCase = true)
             btnCopyClipboard?.text = getString(R.string.copy_to_clipboard)
-            btnCopyClipboard?.visibility = View.VISIBLE
-            btnShareWhatsApp?.visibility = View.VISIBLE
-            btnLaunchSystemVoice?.visibility = View.GONE
+            btnCopyClipboard?.visibility = if (hasResult) View.VISIBLE else View.GONE
+            btnShareWhatsApp?.visibility = if (hasResult) View.VISIBLE else View.GONE
+            btnLaunchSystemVoice?.visibility = if (!hasResult && modeTitle == "MillMitra Assistant") View.VISIBLE else View.GONE
+            if (btnLaunchSystemVoice?.visibility == View.VISIBLE) {
+                btnLaunchSystemVoice?.text = "🎙️ Tap to Speak (Voice Note)"
+            }
             cardParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
             cardParams.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED
